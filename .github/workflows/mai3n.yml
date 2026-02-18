@@ -1,7 +1,24 @@
-    - name: Setup KernelSU-Next
-      run: |
-        # التأكد من التواجد في المجلد الرئيسي للسورس
-        cd $GITHUB_WORKSPACE
-        # تحميل وتشغيل سكربت الإعداد للإصدار legacy
-        curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s v3.0.1-legacy
+name: Build ExtremeKernel with KernelSU-Next
 
+on:
+  workflow_dispatch: # يتيح لك تشغيل الأكشن يدوياً من تبويب Actions
+  push:
+    branches:
+      - main # أو اسم الفرع الخاص بك (v3.0.1-legacy مثلاً)
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup KernelSU-Next
+        run: |
+          
+          # تنفيذ سكربت التثبيت للإصدار legacy
+          curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/next/kernel/setup.sh" | bash -s v3.0.1-legacy
+          
+      # هنا تضع خطوات بناء الكيرنل (Make/Clang)
