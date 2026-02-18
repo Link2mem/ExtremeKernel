@@ -1,35 +1,51 @@
-name: Build ExtremeKernel with SukiSU
+name: Integrate SukiSU-Ultra
 on:
-  workflow_dispatch: # Allows manual trigger
+  workflow_dispatch: # Manual trigger from the "Actions" tab
 
 jobs:
-  build:
+  integrate:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Important: Allows the action to push changes
     steps:
       - name: Checkout Kernel Source
         uses: actions/checkout@v4
         with:
+          # Using your specific repo
           repository: Link2mem/ExtremeKernel
-          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0 # Fetch all history so we can push back
 
-      - name: Set up Build Environment
+      - name: Configure Git
         run: |
-          sudo apt-get update
-          sudo apt-get install -y bc build-essential flex bison libssl-dev libelf-dev
+          git config --global user.email "Were.aksle@gmail.com"
+          git config --global user.name "Link2mem"
 
       - name: Integrate SukiSU-Ultra
         run: |
-          # Running the specific SukiSU setup script
+          # Run the setup script
           curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s nongki
 
-      - name: Manual Patching (If required)
+      - name: Manual Patching
         run: |
-          # Some kernels need manual Kconfig/Makefile links if the script doesn't do it
-          echo 'obj-y += kernelsu/' >> drivers/Makefile
-          # Ensure drivers/kernelsu/Kconfig is sourced in drivers/Kconfig if not already there
+          # Ensure Makefile is linked
+          if ! grep -q "obj-y += kernelsu/" drivers/Makefile; then
+            echo 'obj-y += kernelsu/' >> drivers/Makefile
+          fi
+          
+          # Ensure Kconfig is sourced
           if ! grep -q "kernelsu/Kconfig" drivers/Kconfig; then
+            # Adds the source line before the last line of Kconfig
             sed -i '$i source "drivers/kernelsu/Kconfig"' drivers/Kconfig
           fi
 
-      # Add your compilation steps (make, clang, etc.) here
-
+      - name: Commit and Push Changes
+        run: |
+          git add .
+          # Only commit if there are actually changes to avoid errors
+          if git diff-index --quiet HEAD --; then
+            echo "No changes to commit"
+          else
+            git commit -m "Integrate SukiSU-Ultra (nongki)"
+            git push origin main 
+          fi
