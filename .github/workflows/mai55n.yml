@@ -1,0 +1,35 @@
+name: Build ExtremeKernel with SukiSU
+on:
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
+        with:
+          repository: Link2mem/ExtremeKernel
+          fetch-depth: 1
+
+      - name: Set up Build Environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc build-essential flex bison libssl-dev libelf-dev
+
+      - name: Integrate SukiSU-Ultra
+        run: |
+          # Running the specific SukiSU setup script
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s nongki
+
+      - name: Manual Patching (If required)
+        run: |
+          # Some kernels need manual Kconfig/Makefile links if the script doesn't do it
+          echo 'obj-y += kernelsu/' >> drivers/Makefile
+          # Ensure drivers/kernelsu/Kconfig is sourced in drivers/Kconfig if not already there
+          if ! grep -q "kernelsu/Kconfig" drivers/Kconfig; then
+            sed -i '$i source "drivers/kernelsu/Kconfig"' drivers/Kconfig
+          fi
+
+      # Add your compilation steps (make, clang, etc.) here
+
